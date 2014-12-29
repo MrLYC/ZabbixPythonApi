@@ -22,10 +22,11 @@ class APIItem(object):
         self.__zapi = zapi
         self.__name = name.lower()
 
-    def __call__(self, params):
+    def __call__(self, args=(), **params):
         if not self.__name:
             raise ZabbixAPIException("required method is empty")
 
+        params.update(args)
         try:
             _id, data = self.__zapi.pack_params(self.__name, params)
             json_data = self.__zapi.post(data)
