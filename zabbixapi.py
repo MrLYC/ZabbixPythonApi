@@ -60,7 +60,7 @@ class ZabbixAPI(object):
 
     APIITEM = (
         'action', 'alert', 'apiinfo', 'application', 'dcheck', 'drule', 'user',
-        'usermedia', 'event', 'graph', 'grahpitem', 'history', 'host', 'image',
+        'usermedia', 'event', 'graph', 'graphitem', 'history', 'host', 'image',
         'script', 'item', 'maintenance', 'map', 'mediatype', 'proxy', 'screen',
         'service', 'hostgroup', 'template', 'trigger', 'usergroup', 'dservice',
         'dhost', 'usermacro', 'trends')
