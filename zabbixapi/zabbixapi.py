@@ -65,7 +65,7 @@ class ZabbixAPI(object):
         'usermedia', 'event', 'graph', 'graphitem', 'history', 'host', 'image',
         'script', 'item', 'maintenance', 'map', 'mediatype', 'proxy', 'screen',
         'service', 'hostgroup', 'template', 'trigger', 'usergroup', 'dservice',
-        'dhost', 'usermacro', 'trends')
+        'dhost', 'usermacro', 'trends', 'httptest')
 
     def __init__(self, url):
         self.url = url
