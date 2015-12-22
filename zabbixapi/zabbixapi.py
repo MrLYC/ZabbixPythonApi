@@ -60,20 +60,11 @@ class ZabbixAPI(object):
         'Content-Type': 'application/json-rpc',
         'User-Agent': 'python/zabbix_api'}
 
-    APIITEM = (
-        'action', 'alert', 'apiinfo', 'application', 'dcheck', 'drule', 'user',
-        'usermedia', 'event', 'graph', 'graphitem', 'history', 'host', 'image',
-        'script', 'item', 'maintenance', 'map', 'mediatype', 'proxy', 'screen',
-        'service', 'hostgroup', 'template', 'trigger', 'usergroup', 'dservice',
-        'dhost', 'usermacro', 'trends', 'httptest')
-
     def __init__(self, url):
         self.url = url
         self.auth = ""
 
     def __getattr__(self, name):
-        if name.lower() not in self.APIITEM:
-            raise AttributeError("Could not found attribute %s" % name)
         item = APIItem(self, name)
         setattr(self, name, item)
         return item
