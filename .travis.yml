@@ -1,0 +1,19 @@
+language: python
+sudo: true
+env:
+    - PYTHONPATH=.
+python:
+    - 2.7
+    - 3.3
+    - 3.4
+    - 3.5
+    - 3.6
+    - pypy
+    - pypy3
+install:
+    - pip install -r requirements-dev.txt
+    - pip install codecov
+script:
+    - py.test -v --cov=./ tests
+after_success:
+    - codecov

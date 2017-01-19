@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 
-from .zabbixapi import *
+from .zabbix_api import ZabbixAPI, ZabbixAPIException
+from .zabbix_sender import ZabbixSender
+
 __version__ = '0.1.1'

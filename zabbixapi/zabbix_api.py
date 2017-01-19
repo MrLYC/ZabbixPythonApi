@@ -9,10 +9,11 @@ Date: 17, NOV, 2014
 """
 
 import json
-import urllib2
 import random
-import subprocess
-import tempfile
+try:
+    from urllib2 import Request, urlopen, URLError
+except ImportError:
+    from urllib.request import Request, urlopen, URLError
 
 
 class ZabbixAPIException(Exception):
@@ -32,7 +33,7 @@ class APIItem(object):
         try:
             _id, data = self.__zapi.pack_params(self.__name, params)
             json_data = self.__zapi.post(data)
-        except urllib2.URLError as err:
+        except URLError as err:
             raise ZabbixAPIException(err.reason)
 
         try:
@@ -43,7 +44,7 @@ class APIItem(object):
         result = content.get("result")
         if result is None:
             try:
-                err = content['error']['data']
+                err = content["error"]["data"]
                 raise ZabbixAPIException(err)
             except KeyError as err:
                 raise ZabbixAPIException(err)
@@ -56,9 +57,10 @@ class APIItem(object):
 
 
 class ZabbixAPI(object):
-    POSTHEADERS = {
-        'Content-Type': 'application/json-rpc',
-        'User-Agent': 'python/zabbix_api'}
+    POST_HEADERS = {
+        "Content-Type": "application/json-rpc",
+        "User-Agent": "python/zabbix_api",
+    }
 
     def __init__(self, url):
         self.url = url
@@ -80,11 +82,12 @@ class ZabbixAPI(object):
         """
         _id = random.randint(1, 65565)
         post_params = {
-            'jsonrpc': '2.0',
-            'method': name,
-            'params': params,
-            'id': _id,
-            'auth': self.auth}
+            "jsonrpc": "2.0",
+            "method": name,
+            "params": params,
+            "id": _id,
+            "auth": self.auth,
+        }
 
         if not self.islogin():
             post_params.pop("auth")
@@ -100,8 +103,8 @@ class ZabbixAPI(object):
         Return:
             response data from server
         """
-        request = urllib2.Request(self.url, data, self.POSTHEADERS)
-        response = urllib2.urlopen(request)
+        request = Request(self.url, data, self.POST_HEADERS.copy())
+        response = urlopen(request)
         recv_data = response.read()
         return recv_data
 
@@ -118,30 +121,7 @@ class ZabbixAPI(object):
             passwd: password.
         """
         if not self.islogin():
-            self.auth = self.User.Login({
-                'user': user,
-                'password': passwd})
-
-
-class ZabbixSender(object):
-    def __init__(self, server):
-        self.server = server
-        self.collected_file = tempfile.NamedTemporaryFile("w+b")
-        self.status = None
-
-    def collect(self, host, key, val):
-        self.collected_file.write('"%s" "%s" "%s"\n' % (host, key, val))
-
-    def send(self):
-        self.collected_file.flush()
-        self.status = subprocess.check_call([
-            "zabbix_sender", "-z", self.server,
-            "-i", self.collected_file.name,
-        ])
-        return self.status
-
-    def __enter__(self):
-        return self.collect
-
-    def __exit__(self, typ, val, trbk):
-        self.send()
+            self.auth = self.user.login({
+                "user": user,
+                "password": passwd,
+            })
