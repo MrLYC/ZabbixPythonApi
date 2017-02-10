@@ -1,9 +1,10 @@
 # encoding: utf-8
 
-from collections import namedtuple, deque
+from collections import namedtuple
 import struct
 import socket
 import time
+import re
 
 try:
     import simplejson as json
@@ -16,6 +17,15 @@ ZabbixSessionHeader = namedtuple("ZabbixSessionHeader", [
 ZabbixSessionResponse = namedtuple("ZabbixSessionResponse", [
     "header", "data",
 ])
+ZabbixSenderResponse = namedtuple("ZabbixSenderResponse", [
+    "header", "response", "data", "processed", "failed", "total", "seconds_spent",
+])
+ZabbixCheckResponse = namedtuple("ZabbixCheckResponse", [
+    "header", "response", "data", "items",
+])
+ZabbixCheckItem = namedtuple("ZabbixCheckItem", [
+    "key", "delay", "lastlogsize", "mtime",
+])
 
 
 class RequestError(Exception):
@@ -25,16 +35,21 @@ class RequestError(Exception):
 def get_time(ts=None):
     ts = ts or time.time()
     clock = int(ts)
-    ns = (ts - clock) * 1000000000
-    return clock, ns
+    return clock
 
 
 class ZabbixSession(object):
     HEADER = "ZBXD"
     VERSION = 1
-    PORT = 10050
-    HEADER_FMT = "<4sBq"
+    PORT = 10051
+    HEADER_FMT = "<4sBQ"
     MAX_READ_SIZE = 65535
+    RESPONSE_PATTERN = re.compile((
+        r"processed:\s*(?P<processed>\d+)\s*;\s*"
+        r"failed:\s*(?P<failed>\d+)\s*;\s*"
+        r"total:\s*(?P<total>\d+)\s*;\s*"
+        r"seconds spent:\s*(?P<seconds_spent>[\d\.]+)\s*"
+    ))
 
     @classmethod
     def pack_header(cls, header):
@@ -76,8 +91,8 @@ class ZabbixSession(object):
         self._connected = False
 
     def request(self, data):
-        self.socket.write(self.pack_json(data))
-        response = self.socket.read(self.MAX_READ_SIZE)
+        self.socket.send(self.pack_json(data))
+        response = self.socket.recv(self.MAX_READ_SIZE)
         if not response:
             raise RequestError()
         header_part = response[:self.header_offset]
@@ -89,36 +104,59 @@ class ZabbixSession(object):
         ))
 
     def get_active_checks(self, host):
-        return self.request({
+        result = self.request({
             "request": "active checks",
             "host": host,
         })
+        data = result.data
+        return ZabbixCheckResponse(
+            header=result.header, data=data,
+            response=data.get("response"),
+            items=[
+                ZabbixCheckItem(
+                    key=i.get("key"),
+                    delay=i.get("delay"),
+                    lastlogsize=i.get("lastlogsize"),
+                    mtime=i.get("mtime"),
+                )
+                for i in data["data"]
+            ]
+        )
 
-    def send_agent_data(self, data):
-        clock, ns = get_time(ts)
-        return self.request({
-            "request": "agent data",
+    def send_data(self, data, ts=None):
+        clock = get_time(ts)
+        result = self.request({
+            "request": "sender data",
             "data": data,
             "clock": clock,
-            "ns": ns,
         })
+        data = result.data
+        info_m = self.RESPONSE_PATTERN.search(data.get("info", ""))
+        info = info_m.groupdict() if info_m else {}
+        return ZabbixSenderResponse(
+            header=result.header, data=data,
+            response=data.get("response"),
+            processed=info.get("processed"),
+            failed=info.get("failed"),
+            total=info.get("total"),
+            seconds_spent=info.get("seconds_spent"),
+        )
 
 
 class ZabbixSender(object):
 
-    def __init__(self, server, port=10050):
+    def __init__(self, server, port=None):
         self.server = server
         self.port = port
         self.data = []
 
     def collect(self, host, key, value, ts=None):
-        clock, ns = get_time(ts)
+        clock = get_time(ts)
         self.data.append({
             "host": host,
             "key": key,
             "value": value,
             "clock": clock,
-            "ns": ns,
         })
 
     def send(self):
