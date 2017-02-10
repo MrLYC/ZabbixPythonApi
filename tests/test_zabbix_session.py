@@ -11,7 +11,7 @@ CHECKS_RESPONSE = (
     'ZBXD\x01S\x00\x00\x00\x00\x00\x00\x00'
     '{"response":"success","data":[{"key":"test","delay":30,"lastlogsize":0,"mtime":0}]}'
 )
-SENDER_REQUEST_HEADER = 'ZBXD\x01\x86\x00\x00\x00\x00\x00\x00\x00'
+SENDER_REQUEST_HEADER = b'ZBXD\x01\x86\x00\x00\x00\x00\x00\x00\x00'
 SENDER_DATA = {
     "data": [{"host": "lyc_test", "value": 33136016, "key": "test", "clock": 1486631773}],
     "request": "sender data", "clock": 1486631777,

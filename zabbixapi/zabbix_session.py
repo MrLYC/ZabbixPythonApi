@@ -39,7 +39,7 @@ def get_time(ts=None):
 
 
 class ZabbixSession(object):
-    HEADER = "ZBXD"
+    HEADER = b"ZBXD"
     VERSION = 1
     PORT = 10051
     HEADER_FMT = "<4sBQ"
@@ -60,12 +60,11 @@ class ZabbixSession(object):
 
     @classmethod
     def pack_json(cls, data):
-        data = json.dumps(data, ensure_ascii=False)
-        data = data.encode("utf-8")
+        data = json.dumps(data, ensure_ascii=True)
         header = ZabbixSessionHeader(
             header=cls.HEADER, version=cls.VERSION, length=len(data),
         )
-        return cls.pack_header(header) + data
+        return cls.pack_header(header) + data.encode("ascii")
 
     def __init__(self, server, port=None):
         self.server = server
@@ -97,7 +96,7 @@ class ZabbixSession(object):
             raise RequestError()
         header_part = response[:self.header_offset]
         header = ZabbixSessionHeader(*struct.unpack(
-            self.HEADER_FMT, header_part,
+            self.HEADER_FMT, header_part.encode("ascii"),
         ))
         return ZabbixSessionResponse(header, json.loads(
             response[self.header_offset: self.header_offset + header.length],
