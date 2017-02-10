@@ -22,7 +22,7 @@ setup(
     name='zabbixapi',
     version=__version__,
     description='a tool to communicate to zabbix',
-    long_description='a tool to communicate to zabbix',
+    long_description=long_description,
     author='Liu Yicong',
     author_email='imyikong@gmail.com',
     packages=["zabbixapi"],
