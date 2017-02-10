@@ -43,6 +43,7 @@ class ZabbixSession(object):
     VERSION = 1
     PORT = 10051
     HEADER_FMT = "<4sBQ"
+    HEADER_OFFSET = struct.calcsize(HEADER_FMT)
     MAX_READ_SIZE = 65535
     RESPONSE_PATTERN = re.compile((
         r"processed:\s*(?P<processed>\d+)\s*;\s*"
@@ -50,6 +51,7 @@ class ZabbixSession(object):
         r"total:\s*(?P<total>\d+)\s*;\s*"
         r"seconds spent:\s*(?P<seconds_spent>[\d\.]+)\s*"
     ))
+    ENCODING = "utf-8"
 
     @classmethod
     def pack_header(cls, header):
@@ -59,12 +61,24 @@ class ZabbixSession(object):
         )
 
     @classmethod
-    def pack_json(cls, data):
-        data = json.dumps(data, ensure_ascii=True)
+    def pack_json(cls, data, encoding=None):
+        data = json.dumps(data, ensure_ascii=False).encode(
+            encoding or cls.ENCODING
+        )
         header = ZabbixSessionHeader(
             header=cls.HEADER, version=cls.VERSION, length=len(data),
         )
-        return cls.pack_header(header) + data.encode("ascii")
+        return cls.pack_header(header) + data
+
+    @classmethod
+    def unpack_json(cls, response, encoding=None):
+        encoding = encoding or cls.ENCODING
+        header_part = response[:cls.HEADER_OFFSET]
+        header = ZabbixSessionHeader(*struct.unpack(
+            cls.HEADER_FMT, header_part,
+        ))
+        response = response[cls.HEADER_OFFSET:cls.HEADER_OFFSET + header.length]
+        return header, json.loads(response.decode(encoding))
 
     def __init__(self, server, port=None):
         self.server = server
@@ -89,18 +103,14 @@ class ZabbixSession(object):
         self.socket.close()
         self._connected = False
 
-    def request(self, data):
-        self.socket.send(self.pack_json(data))
+    def request(self, data, encoding=None):
+        encoding = encoding or self.ENCODING
+        self.socket.send(self.pack_json(data, encoding))
         response = self.socket.recv(self.MAX_READ_SIZE)
         if not response:
             raise RequestError()
-        header_part = response[:self.header_offset]
-        header = ZabbixSessionHeader(*struct.unpack(
-            self.HEADER_FMT, header_part.encode("ascii"),
-        ))
-        return ZabbixSessionResponse(header, json.loads(
-            response[self.header_offset: self.header_offset + header.length],
-        ))
+        header, data = self.unpack_json(response)
+        return ZabbixSessionResponse(header, data)
 
     def get_active_checks(self, host):
         result = self.request({
