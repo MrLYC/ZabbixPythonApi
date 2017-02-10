@@ -22,6 +22,21 @@ class TestZabbixAPIBase(TestCase):
         self.urlopen_patch.stop()
 
 
+class APIItem(TestCase):
+    def test_call(self):
+        api_mock = mock.MagicMock()
+        api_mock.pack_params.return_value = (1, "")
+        api_mock.post.return_value = '{"result": 1}'
+
+        item = zabbix_api.APIItem(api_mock, "")
+        with self.assertRaises(zabbix_api.ZabbixAPIException):
+            item()
+        api_mock.post.assert_not_called()
+        item = zabbix_api.APIItem(api_mock, "test")
+        item()
+        api_mock.post.assert_called()
+
+
 class TestZabbixAPI(TestZabbixAPIBase):
     def test_construction(self):
         self.assertFalse(self.api.islogin())

@@ -148,6 +148,7 @@ class ZabbixSender(object):
         self.server = server
         self.port = port
         self.data = []
+        self.result = None
 
     def collect(self, host, key, value, ts=None):
         clock = get_time(ts)
@@ -160,10 +161,10 @@ class ZabbixSender(object):
 
     def send(self):
         with ZabbixSession(self.server, self.port) as session:
-            return session.send_agent_data(self.data)
+            return session.send_data(self.data)
 
     def __enter__(self):
         return self.collect
 
     def __exit__(self, typ, val, trbk):
-        self.send()
+        self.result = self.send()
