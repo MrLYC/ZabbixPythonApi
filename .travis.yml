@@ -15,7 +15,6 @@ python:
     - pypy3
 install:
     - pip install -r requirements-dev.txt
-    - if [[ "${INSTALL_TYPE}" == "no" ]]; then pip install -r requirements.txt; fi
     - if [[ "${INSTALL_TYPE}" == "direct" ]]; then python setup.py install; fi
     - if [[ "${INSTALL_TYPE}" == "git" ]]; then pip install https://github.com/MrLYC/ZabbixPythonApi/archive/master.zip; fi
     - if [[ "${INSTALL_TYPE}" == "pypi" ]]; then pip install zabbixapi; fi
