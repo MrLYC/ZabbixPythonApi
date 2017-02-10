@@ -34,7 +34,7 @@ class TestZabbixSession(unittest.TestCase):
     def test_unpack_json(self):
         session = zabbix_session.ZabbixSession("127.0.0.1")
         data = {
-            "data": "测试",
+            "data": u"测试",
         }
         packed_data = session.pack_json(data)
         header, unpacked_data = session.unpack_json(packed_data)
@@ -48,7 +48,7 @@ class TestZabbixSession(unittest.TestCase):
         self.assertEqual(unpacked_data.get("data"), u"测试")
 
         data = {
-            "data": u"测试",
+            "data": "测试",
         }
         packed_data = session.pack_json(data)
         header, unpacked_data = session.unpack_json(packed_data)

@@ -62,9 +62,9 @@ class ZabbixSession(object):
 
     @classmethod
     def pack_json(cls, data, encoding=None):
-        data = json.dumps(data, ensure_ascii=False).encode(
-            encoding or cls.ENCODING
-        )
+        data = json.dumps(data, ensure_ascii=False)
+        if not isinstance(data, bytes):
+            data = data.encode(encoding or cls.ENCODING)
         header = ZabbixSessionHeader(
             header=cls.HEADER, version=cls.VERSION, length=len(data),
         )
@@ -78,7 +78,9 @@ class ZabbixSession(object):
             cls.HEADER_FMT, header_part,
         ))
         response = response[cls.HEADER_OFFSET:cls.HEADER_OFFSET + header.length]
-        return header, json.loads(response.decode(encoding))
+        if isinstance(response, bytes):
+            response = response.decode(encoding)
+        return header, json.loads(response)
 
     def __init__(self, server, port=None):
         self.server = server
